@@ -1,0 +1,34 @@
+--Insertar datos a la base de datos--
+
+BULK INSERT MovilidadTemporal
+FROM 'C:\Users\frang\OneDrive\Documentos\CuboMovilidadSV\Reporte Movilidad COVID SV - MOVILIDAD SV.csv'
+WITH (
+    FIELDTERMINATOR = ',', 
+    ROWTERMINATOR = '\n',  
+    FIRSTROW = 2
+);
+
+--Verificar datos después de la carga--
+
+-- Verificar si hay valores nulos--
+SELECT * FROM MovilidadTemporal WHERE fecha IS NULL OR departamento IS NULL;
+
+-- Revisar rangos de movilidad--
+SELECT MIN(parks) AS Min_Movilidad, MAX(parks) AS Max_Movilidad FROM MovilidadTemporal;
+
+--Exploración de Datos--
+
+SELECT COUNT(*) AS Total_Registros, 
+       COUNT(DISTINCT departamento) AS Total_Departamentos 
+FROM MovilidadTemporal;
+
+SELECT AVG(parks) AS Promedio_Parques, 
+       AVG(grocery) AS Promedio_Supermercados, 
+       AVG(transit) AS Promedio_Transporte
+FROM MovilidadTemporal;
+
+SELECT YEAR(fecha) AS Anio, MONTH(fecha) AS Mes, AVG(parks) AS Movilidad_Parques
+FROM MovilidadTemporal
+GROUP BY YEAR(fecha), MONTH(fecha)
+ORDER BY Anio, Mes;
+

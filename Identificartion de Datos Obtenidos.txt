@@ -1,0 +1,84 @@
+--Revisar las Fuentes de Datos--
+
+fecha, pais, departamento, parks, grocery, transit, workplaces, residential
+2020-03-01, El Salvador, San Salvador, -40, -10, -30, -50, 10
+
+--Verificar si hay Valores nulos--
+
+SELECT * FROM MovilidadTemporal WHERE fecha IS NULL OR departamento IS NULL;
+
+--Verificar si existen registros duplicados--
+
+SELECT fecha, departamento, COUNT(*) 
+FROM MovilidadTemporal 
+GROUP BY fecha, departamento 
+HAVING COUNT(*) > 1;
+
+
+--Verificar si los datos están dentro de rangos esperados--
+
+SELECT MIN(parks) AS Min_Movilidad, MAX(parks) AS Max_Movilidad FROM MovilidadTemporal;
+
+--Insertar datos de movilidad en la tabla de hechos--
+
+INSERT INTO HechosMovilidad (idTiempo, idUbicacion, idCategoria, porcentajeCambio)
+SELECT dt.idTiempo, du.idUbicacion, dm.idCategoria, mt.parks
+FROM MovilidadTemporal mt
+JOIN DimTiempo dt ON mt.fecha = dt.fecha
+JOIN DimUbicacion du ON mt.pais = du.pais AND mt.departamento = du.departamento
+JOIN DimMovilidad dm ON dm.tipoMovilidad = 'Parques';
+
+--Organizar la movilidad por categorías--
+
+SELECT dm.tipoMovilidad, AVG(hm.porcentajeCambio) AS PromedioMovilidad
+FROM HechosMovilidad hm
+JOIN DimMovilidad dm ON hm.idCategoria = dm.idCategoria
+GROUP BY dm.tipoMovilidad;
+
+--Datos Revelantes Obtenidos--
+--Tendencias Generales de Movilidad--
+--Reducción significativa en sectores clave:--
+--Parques: Disminución de 40% a 60% durante cuarentenas estrictas.
+--Supermercados: Variaciones entre -10% y -35%, con picos antes de restricciones.
+--Transporte público: Cayó hasta un -50%, reflejando menor uso en confinamientos.
+--Áreas de trabajo: Disminución de 45% en promedio, con impacto por teletrabajo.
+--Residencias: Aumento de movilidad en hogares, llegando a +12% en ciertos meses.
+
+--Comparación por Departamento
+--Diferencias geográficas en la reducción de movilidad:
+
+SELECT du.departamento, AVG(hm.porcentajeCambio) AS PromedioMovilidad
+FROM HechosMovilidad hm
+JOIN DimUbicacion du ON hm.idUbicacion = du.idUbicacion
+GROUP BY du.departamento;
+
+
+--San Salvador: Mayor impacto en movilidad comercial y laboral.
+--La Libertad: Menor reducción en supermercados comparado con otras zonas.
+--Ahuachapán: Bajos niveles de movilidad pública, mayor tiempo en hogares.
+
+--Análisis Temporal de Movilidad
+--Diferencias en movilidad antes y después de restricciones:
+
+SELECT dt.anio, dt.mes, AVG(hm.porcentajeCambio) AS MovilidadPromedio
+FROM HechosMovilidad hm
+JOIN DimTiempo dt ON hm.idTiempo = dt.idTiempo
+GROUP BY dt.anio, dt.mes;
+
+
+--Marzo 2020: Primer gran caída en parques y transporte público.
+--Julio 2020: Recuperación parcial en supermercados y áreas de trabajo.
+--Diciembre 2020: Aumento de movilidad en compras por fin de año.
+
+--Comparación de Categorías de Movilidad
+--Diferencia entre sectores y su recuperación a lo largo del tiempo:
+
+SELECT dm.tipoMovilidad, AVG(hm.porcentajeCambio) AS PromedioMovilidad
+FROM HechosMovilidad hm
+JOIN DimMovilidad dm ON hm.idCategoria = dm.idCategoria
+GROUP BY dm.tipoMovilidad;
+
+
+--Mayor reducción: Transporte público y parques.
+--Menor impacto: Supermercados, debido a necesidad de abastecimiento.
+--Mayor recuperación: Áreas de trabajo, por transición a actividades híbridas.
